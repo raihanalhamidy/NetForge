@@ -1,51 +1,33 @@
+import { Command } from "commander";
 import pc from "picocolors";
-import { parseConfigFile } from "./core/parser.js";
-import { renderConfig } from "./core/renderer.js";
+import { handleBuildCommand } from "./commands/build.js";
 
-async function testRenderFlow(
-  label: string,
-  yamlPath: string,
-  templatePath: string
-): Promise<void> {
-  console.log(pc.bold(pc.cyan(`\n=== ${label} ===`)));
-  console.log(pc.dim(`YAML     : ${yamlPath}`));
-  console.log(pc.dim(`Template : ${templatePath}`));
+const program = new Command();
 
-  try {
-    const data = await parseConfigFile(yamlPath);
-    const rendered = await renderConfig(templatePath, data);
+program
+  .name("netforge")
+  .description("Declarative multi-vendor network device config generator CLI")
+  .version("0.1.0")
+  .showHelpAfterError(
+    pc.dim("(Gunakan --help untuk melihat daftar perintah dan opsi yang tersedia)")
+  )
+  .configureOutput({
+    outputError: (str, write) => write(pc.red(str)),
+  });
 
-    console.log(
-      pc.green(
-        `✔ Berhasil render konfigurasi untuk ${pc.bold(data.device.hostname)} (${data.device.vendor})`
-      )
-    );
-    console.log(pc.yellow("--- Preview Output ---"));
-    console.log(pc.white(rendered.trimEnd()));
-    console.log(pc.yellow("--- End Preview ---"));
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(pc.red(`✖ ${error.message}`));
-    } else {
-      console.error(pc.red("✖ Terjadi error yang tidak diketahui."));
-    }
-  }
-}
+program
+  .command("build")
+  .description(
+    "Generate konfigurasi perangkat jaringan dari file YAML dan template Nunjucks"
+  )
+  .requiredOption("-t, --template <path>", "Path ke file template .njk")
+  .requiredOption("-d, --data <path>", "Path ke file data input YAML")
+  .option("-o, --output <path>", "Path output file konfigurasi")
+  .action(handleBuildCommand);
 
-async function main(): Promise<void> {
-  console.log(pc.bold("⚡ NetForge CLI - Template Renderer Integration Test"));
-
-  await testRenderFlow(
-    "MikroTik RouterOS",
-    "data/samples/mikrotik_vlan.yaml",
-    "templates/mikrotik/vlan_trunk.njk"
-  );
-
-  await testRenderFlow(
-    "Cisco IOS",
-    "data/samples/cisco_vlan.yaml",
-    "templates/cisco/vlan_access.njk"
-  );
-}
-
-void main();
+program.parseAsync(process.argv).catch((error: unknown) => {
+  const message =
+    error instanceof Error ? error.message : "Terjadi error yang tidak diketahui.";
+  console.error(pc.red(`✖ ${message}`));
+  process.exit(1);
+});
