@@ -1,95 +1,120 @@
-# NetForge
+<div align="center">
+
+```text
+ _   _      _   _____                    
+| \ | | ___| |_|  ___|__  _ __ __ _  ___ 
+|  \| |/ _ \ __| |_ / _ \| '__/ _` |/ _ \
+| |\  |  __/ |_|  _| (_) | | | (_| |  __/
+|_| \_|\___|\__|_|  \___/|_|  \__, |\___|
+                              |___/      
+```
+
+# ⚡ NetForge
 
 **Declarative Multi-Vendor Network Device Config Generator CLI**
 
 [![CI](https://github.com/raihanalhamidy/NetForge/actions/workflows/ci.yml/badge.svg)](https://github.com/raihanalhamidy/NetForge/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vitest](https://img.shields.io/badge/Vitest-20%20passed-6E9F18?logo=vitest&logoColor=white)](tests/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+[Quickstart](#quickstart-3-langkah) •
+[Arsitektur](#arsitektur-sistem) •
+[Demo Terminal](#showcase--terminal-preview) •
+[Dukungan Vendor](#dukungan-vendor--perbandingan-fitur) •
+[Kontribusi](#panduan-kontribusi)
+
+</div>
 
 ---
 
 ## Mengapa NetForge?
 
-**Masalah**: Mengonfigurasi banyak switch dan router dari berbagai vendor secara manual lewat CLI sangat rentan terhadap *human error* mulai dari salah ketik VLAN ID, lupa menambahkan interface ke trunk, hingga inkonsistensi subnet mask antar perangkat.
+**Masalah**: Mengonfigurasi banyak switch dan router dari berbagai vendor secara manual lewat CLI sangat rentan terhadap *human error*—mulai dari salah ketik VLAN ID, lupa memasukkan port ke trunk, hingga kesalahan konversi subnet mask antar perangkat.
 
-**Solusi**: **NetForge** memisahkan *data topologi* (YAML) dari *sintaks CLI vendor* (template Nunjucks). Data YAML terlebih dahulu divalidasi secara ketat saat runtime menggunakan **Zod** (memastikan rentang VLAN `1–4094`, format IP/CIDR, dan kelengkapan field) sebelum di-render menjadi script konfigurasi siap pakai.
-
----
-
-## Vendor yang Didukung
-
-| Vendor | Status | Template Tersedia | Output |
-| --- | --- | --- | --- |
-| **MikroTik RouterOS** | Didukung | `templates/mikrotik/vlan_trunk.njk` | Script `.rsc` / CLI RouterOS (bridge VLAN filtering) |
-| **Cisco IOS** | Didukung | `templates/cisco/vlan_access.njk` | Konfigurasi `.cfg` / IOS (VLAN DB, SVI, trunk & access) |
-| **Generic / Lainnya** | Ekstensibel | Tambahkan template `.njk` di `templates/<vendor>/` | Menyesuaikan template |
+**Solusi**: **NetForge** memisahkan *data topologi jaringan* (**YAML**) dari *sintaks CLI vendor* (**Nunjucks / Jinja2-compatible templates**). Setiap input divalidasi secara ketat saat runtime dengan **Zod** sebelum di-render menjadi script konfigurasi perangkat yang bersih dan siap pakai.
 
 ---
 
-## Quick Start & Instalasi
+## Arsitektur Sistem
 
-Pastikan **Node.js >= 20** dan **npm** sudah terpasang.
-
-```bash
-# 1. Clone repositori
-git clone https://github.com/raihanalhamidy/NetForge.git
-cd NetForge
-
-# 2. Install dependencies
-npm install
-
-# 3. Build project
-npm run build
+```mermaid
+flowchart LR
+    A["Input Data\n(File YAML / Wizard netforge init)"] --> B["Core Engine\n(YAML Parser & Zod Validator)"]
+    B --> C["Rendering Layer\n(Nunjucks + Custom Filters)"]
+    C --> D["Output Artifacts\n(.rsc / .cfg / stdout)"]
 ```
+
+1. **Input Layer**: Pengguna membuat file YAML secara manual atau melalui wizard interaktif `netforge init`.
+2. **Core Engine (`src/core/parser.ts`, `src/core/validator.ts`)**: Mem-parse YAML dan memvalidasi tipe, rentang VLAN (`1–4094`), format IPv4/CIDR, serta enum vendor menggunakan Zod.
+3. **Rendering Layer (`src/core/renderer.ts`)**: Merender template `.njk` dengan `autoescape: false`, `trimBlocks: true`, `lstripBlocks: true`, serta filter bantu (`ip_only`, `subnet_mask`).
+4. **Output Artifacts**: Menghasilkan script konfigurasi siap pakai ke terminal (`stdout`) atau file (`.rsc`, `.cfg`).
 
 ---
 
-## Panduan Penggunaan CLI
+## Showcase & Terminal Preview
 
-### A. Membuat File Input YAML Secara Interaktif (`init`)
+### 1. Interactive Setup Wizard (`netforge init`)
 
-Gunakan perintah `init` untuk menjalankan wizard interaktif yang memandu pengisian hostname, vendor, IP management, gateway, daftar VLAN, dan interface trunk/access:
+Buat file YAML konfigurasi jaringan secara interaktif tanpa menulis struktur YAML dari nol:
 
-```bash
-node dist/index.js init
+```text
+$ node dist/index.js init
+
+┌   ⚡ NetForge Interactive Setup Wizard
+│
+◆  Masukkan hostname perangkat:
+│  RB-DIST-01
+│
+◆  Pilih vendor perangkat jaringan:
+│  ● MikroTik RouterOS (Router / Switch RouterOS (.rsc))
+│  ○ Cisco IOS
+│  ○ Generic
+│
+◆  Masukkan Management IP (format IPv4/CIDR):
+│  192.168.88.2/24
+│
+◆  Masukkan Gateway IP (opsional, tekan Enter untuk melewati):
+│  192.168.88.1
+│
+◆  Masukkan VLAN ID #1 (1-4094):
+│  10
+│
+◆  Masukkan nama untuk VLAN 10:
+│  Management
+│
+◆  Tambah VLAN lagi?
+│  ○ Yes / ● No
+│
+◆  Masukkan daftar Trunk Port (pisahkan dengan koma):
+│  ether1, ether2
+│
+└  ✔ Konfigurasi berhasil disimpan ke: ./netforge-config.yaml
+   Sekarang jalankan:
+     netforge build -t templates/mikrotik/vlan_trunk.njk -d ./netforge-config.yaml
 ```
 
-Untuk menentukan lokasi output file YAML secara spesifik, gunakan opsi `-o, --output <path>` (default: `./netforge-config.yaml`):
+### 2. Generate Konfigurasi (`netforge build`)
 
-```bash
-node dist/index.js init -o data/my-switch.yaml
+```text
+$ node dist/index.js build -t templates/cisco/vlan_access.njk -d data/samples/cisco_vlan.yaml -o output/cisco-switch.cfg
+
+⏳ Memproses data konfigurasi dari: data/samples/cisco_vlan.yaml
+⚙  Me-render template templates/cisco/vlan_access.njk untuk SW-ACCESS-01 (cisco)...
+✔ Konfigurasi berhasil disimpan ke: output/cisco-switch.cfg
 ```
 
-### B. Generate Konfigurasi Perangkat (`build`)
+<details>
+<summary>Lihat contoh file YAML input dan hasil output CLI MikroTik &amp; Cisco</summary>
 
-Gunakan perintah `build` dengan opsi:
-- `-t, --template <path>` *(wajib)*: Path ke file template Nunjucks (`.njk`).
-- `-d, --data <path>` *(wajib)*: Path ke file variabel konfigurasi YAML.
-- `-o, --output <path>` *(opsional)*: Path file output. Jika tidak diisi, hasil dicetak langsung ke terminal.
-
-#### 1. Menampilkan hasil ke terminal (MikroTik RouterOS)
-
-```bash
-node dist/index.js build -t templates/mikrotik/vlan_trunk.njk -d data/samples/mikrotik_vlan.yaml
-```
-
-#### 2. Menyimpan hasil ke file konfigurasi (Cisco IOS)
-
-```bash
-node dist/index.js build -t templates/cisco/vlan_access.njk -d data/samples/cisco_vlan.yaml -o output/cisco-switch.cfg
-```
-
-*(Selama pengembangan tanpa build ulang, Anda juga dapat menjalankan `npm run dev -- init` atau `npm run dev -- build -t ... -d ...`.)*
-
----
-
-## Contoh Struktur Data Input YAML
+#### Contoh Input YAML (`data/samples/mikrotik_vlan.yaml`)
 
 ```yaml
 device:
   hostname: "RB-DIST-01"
-  vendor: "mikrotik" # mikrotik | cisco | generic
+  vendor: "mikrotik"
   mgmt_ip: "192.168.88.2/24"
   gateway: "192.168.88.1"
 
@@ -100,6 +125,9 @@ vlans:
   - id: 20
     name: "Hotspot"
     description: "Hotspot Client Network"
+  - id: 30
+    name: "Office"
+    description: "Internal Office Network"
 
 interfaces:
   trunk:
@@ -108,7 +136,138 @@ interfaces:
   access:
     - name: "ether3"
       vlan_id: 20
+    - name: "ether4"
+      vlan_id: 30
 ```
+
+#### Contoh Output MikroTik RouterOS (`.rsc`)
+
+```rsc
+# Generated by NetForge for RB-DIST-01 (MikroTik RouterOS)
+
+/system identity set name="RB-DIST-01"
+
+/interface bridge add name=bridge1 vlan-filtering=yes
+
+# Bridge Ports - Trunk
+/interface bridge port add bridge=bridge1 interface=ether1
+/interface bridge port add bridge=bridge1 interface=ether2
+
+# Bridge Ports - Access
+/interface bridge port add bridge=bridge1 interface=ether3 pvid=20
+/interface bridge port add bridge=bridge1 interface=ether4 pvid=30
+
+# VLAN Interfaces
+/interface vlan add interface=bridge1 name=Management vlan-id=10 comment="Management Network"
+/interface vlan add interface=bridge1 name=Hotspot vlan-id=20 comment="Hotspot Client Network"
+/interface vlan add interface=bridge1 name=Office vlan-id=30 comment="Internal Office Network"
+
+# Bridge VLAN Filtering Table
+/interface bridge vlan add bridge=bridge1 tagged=ether1,ether2 vlan-ids=10
+/interface bridge vlan add bridge=bridge1 tagged=ether1,ether2 untagged=ether3 vlan-ids=20
+/interface bridge vlan add bridge=bridge1 tagged=ether1,ether2 untagged=ether4 vlan-ids=30
+
+# Management IP & Routing
+/ip address add address=192.168.88.2/24 interface=bridge1
+/ip route add dst-address=0.0.0.0/0 gateway=192.168.88.1
+```
+
+#### Contoh Output Cisco IOS (`.cfg`)
+
+```text
+! Generated by NetForge for SW-ACCESS-01 (Cisco IOS)
+!
+hostname SW-ACCESS-01
+!
+vlan 100
+ name Voice
+!
+vlan 200
+ name Data
+!
+interface Vlan1
+ description Management Interface
+ ip address 10.10.10.2 255.255.255.0
+ no shutdown
+!
+ip default-gateway 10.10.10.1
+!
+interface GigabitEthernet0/1
+ description Trunk Port
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 100,200
+ no shutdown
+!
+interface GigabitEthernet0/2
+ switchport mode access
+ switchport access vlan 200
+ spanning-tree portfast
+ no shutdown
+!
+end
+```
+
+</details>
+
+---
+
+## Dukungan Vendor & Perbandingan Fitur
+
+| Vendor / OS | Status | Template | Fitur Konfigurasi |
+| --- | --- | --- | --- |
+| **MikroTik RouterOS v7** | ✅ Didukung | [`templates/mikrotik/vlan_trunk.njk`](templates/mikrotik/vlan_trunk.njk) | Identity, Bridge VLAN Filtering, Tagged/Untagged Ports, VLAN Interfaces, Management IP & Default Route |
+| **Cisco IOS** | ✅ Didukung | [`templates/cisco/vlan_access.njk`](templates/cisco/vlan_access.njk) | Hostname, VLAN Database, Management SVI (`ip_only` & `subnet_mask`), Dot1Q Trunk, Access Portfast |
+| **OpenWrt** | 🚧 Planned *(PR Welcome)* | `templates/openwrt/` *(via `vendor: generic`)* | UCI Network Config & DSA Bridge VLAN |
+| **VyOS** | 🚧 Planned *(PR Welcome)* | `templates/vyos/` *(via `vendor: generic`)* | `set interfaces` & VLAN VIF |
+
+> **Catatan**: Kontributor dapat langsung menambahkan template `.njk` untuk OpenWrt, VyOS, atau vendor lain menggunakan `vendor: "generic"` tanpa mengubah kode TypeScript inti.
+
+---
+
+## Quickstart 3-Langkah
+
+Pastikan **Node.js >= 20** dan **npm** telah terpasang.
+
+```bash
+# 1. Clone & install dependencies
+git clone https://github.com/raihanalhamidy/NetForge.git && cd NetForge && npm install
+
+# 2. Build CLI bundle
+npm run build
+
+# 3. Generate konfigurasi dalam satu baris perintah
+node dist/index.js build -t templates/cisco/vlan_access.njk -d data/samples/cisco_vlan.yaml -o output/cisco-switch.cfg
+```
+
+Ingin membuat data YAML sendiri terlebih dahulu? Jalankan wizard interaktif:
+
+```bash
+node dist/index.js init -o data/my-device.yaml
+```
+
+<details>
+<summary>Daftar perintah npm &amp; opsi CLI lengkap</summary>
+
+### Perintah CLI
+
+| Command | Opsi | Keterangan |
+| --- | --- | --- |
+| `netforge init` | `-o, --output <path>` | Wizard interaktif pembuatan file YAML (default: `./netforge-config.yaml`) |
+| `netforge build` | `-t, --template <path>` *(wajib)* | Path ke file template Nunjucks (`.njk`) |
+| `netforge build` | `-d, --data <path>` *(wajib)* | Path ke file data input YAML |
+| `netforge build` | `-o, --output <path>` *(opsional)* | Simpan hasil ke file; jika kosong, dicetak ke `stdout` |
+
+### Scripts Pengembangan
+
+```bash
+npm run dev -- build -t templates/mikrotik/vlan_trunk.njk -d data/samples/mikrotik_vlan.yaml
+npm run lint   # Cek tipe TypeScript (tsc --noEmit)
+npm test       # Jalankan unit test Vitest (20 test cases)
+npm run build  # Build ESM & deklarasi tipe (tsup)
+```
+
+</details>
 
 ---
 
@@ -117,40 +276,42 @@ interfaces:
 ```text
 NetForge/
 ├── .github/
-│   ├── ISSUE_TEMPLATE/        # Template bug report & request template vendor
-│   ├── workflows/ci.yml       # Pipeline CI GitHub Actions
-│   └── PULL_REQUEST_TEMPLATE.md
-├── data/samples/              # Contoh data input YAML MikroTik & Cisco
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.yml               # Form pelaporan bug
+│   │   └── new_template_request.yml     # Form pengajuan template vendor baru
+│   ├── workflows/
+│   │   └── ci.yml                       # GitHub Actions (lint, test, build)
+│   └── PULL_REQUEST_TEMPLATE.md         # Checklist kontributor PR
+├── data/
+│   └── samples/                         # Contoh input YAML (MikroTik & Cisco)
 ├── src/
-│   ├── commands/              # Handler command CLI (init, build)
-│   ├── core/                  # Validator Zod, Parser YAML, Renderer Nunjucks
-│   ├── types/                 # Definisi tipe TypeScript
-│   └── index.ts               # Entry point CLI Commander
-├── templates/
-│   ├── mikrotik/              # Template MikroTik RouterOS
-│   └── cisco/                 # Template Cisco IOS
-└── tests/                     # Unit test Vitest
+│   ├── commands/                        # Handler subcommand CLI (init, build)
+│   ├── core/                            # Validator Zod, Parser YAML, Renderer Nunjucks
+│   ├── types/                           # Definisi tipe TypeScript
+│   └── index.ts                         # Entry point CLI Commander
+├── templates/                           # 📍 Lokasi template vendor (.njk)
+│   ├── mikrotik/
+│   │   └── vlan_trunk.njk
+│   └── cisco/
+│       └── vlan_access.njk
+├── tests/                               # Unit test Vitest (validator, parser, renderer)
+├── CONTRIBUTING.md
+└── LICENSE
 ```
 
 ---
 
-## Menjalankan Pengujian
+## Panduan Kontribusi
 
-```bash
-npm run lint   # Cek tipe TypeScript (tsc --noEmit)
-npm test       # Jalankan unit test Vitest
-npm run build  # Build bundle ESM & deklarasi tipe (tsup)
-```
+Kontribusi sangat terbuka—terutama penambahan template perangkat jaringan baru di folder [`templates/`](templates/) tanpa perlu mengubah *core* engine TypeScript.
 
----
-
-## Contributing
-
-Kontribusi sangat terbuka terutama untuk penambahan template vendor jaringan baru! Silakan baca [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan struktur template, daftar variabel Nunjucks yang tersedia, dan aturan Pull Request.
+- Baca panduan lengkap penamaan file, variabel Nunjucks, dan pengujian lokal di [CONTRIBUTING.md](CONTRIBUTING.md).
+- Menemukan bug? Buat laporan lewat [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.yml).
+- Ingin mengusulkan dukungan vendor baru? Gunakan [New Vendor Template Request](.github/ISSUE_TEMPLATE/new_template_request.yml).
+- Siap mengirim kode atau template? Pastikan `npm run lint`, `npm test`, dan `npm run build` lulus lalu ikuti [Pull Request Template](.github/PULL_REQUEST_TEMPLATE.md).
 
 ---
 
 ## Lisensi
 
-Proyek ini dirilis di bawah lisensi [MIT](LICENSE).
-
+Dirilis di bawah lisensi [MIT](LICENSE) — Copyright © 2026 Raihan AlHamidy.
