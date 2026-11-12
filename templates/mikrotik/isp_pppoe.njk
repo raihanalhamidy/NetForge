@@ -2,21 +2,20 @@
 
 /system identity set name="{{ device.hostname }}"
 
-# Bridge & VLAN Infrastructure
-/interface bridge add name=bridge1 vlan-filtering=yes
+# Bridge & VLAN Infrastructure (Idempotent)
+:if ([:len [/interface bridge find name="bridge1"]] = 0) do={ /interface bridge add name=bridge1 vlan-filtering=yes }
 
 {% for iface in interfaces.trunk %}
-/interface bridge port add bridge=bridge1 interface={{ iface }}
+:if ([:len [/interface bridge port find bridge="bridge1" interface="{{ iface }}"]] = 0) do={ /interface bridge port add bridge=bridge1 interface={{ iface }} }
 {% endfor %}
 {% if interfaces.access and interfaces.access.length > 0 %}
 {% for acc in interfaces.access %}
-/interface bridge port add bridge=bridge1 interface={{ acc.name }} pvid={{ acc.vlan_id }}
+:if ([:len [/interface bridge port find bridge="bridge1" interface="{{ acc.name }}"]] = 0) do={ /interface bridge port add bridge=bridge1 interface={{ acc.name }} pvid={{ acc.vlan_id }} }
 {% endfor %}
 {% endif %}
 
 {% for vlan in vlans %}
-/interface vlan add interface=bridge1 name={{ vlan.name }} vlan-id={{ vlan.id }}{% if vlan.description %} comment="{{ vlan.description }}"{% endif %}
-
+:if ([:len [/interface vlan find name="{{ vlan.name }}"]] = 0) do={ /interface vlan add interface=bridge1 name={{ vlan.name }} vlan-id={{ vlan.id }}{% if vlan.description %} comment="{{ vlan.description }}"{% endif %} }
 {% endfor %}
 
 {% for vlan in vlans %}
@@ -28,30 +27,28 @@
     {% endif %}
   {% endfor %}
 {% endif %}
-/interface bridge vlan add bridge=bridge1 tagged={{ interfaces.trunk | join(",") }}{% if untagged.length > 0 %} untagged={{ untagged | join(",") }}{% endif %} vlan-ids={{ vlan.id }}
+:if ([:len [/interface bridge vlan find bridge="bridge1" vlan-ids={{ vlan.id }}]] = 0) do={ /interface bridge vlan add bridge=bridge1 tagged={{ interfaces.trunk | join(",") }}{% if untagged.length > 0 %} untagged={{ untagged | join(",") }}{% endif %} vlan-ids={{ vlan.id }} }
 {% endfor %}
 
 # Management Addressing & Routing
-/ip address add address={{ device.mgmt_ip }} interface=bridge1
+:if ([:len [/ip address find address="{{ device.mgmt_ip }}" interface="bridge1"]] = 0) do={ /ip address add address={{ device.mgmt_ip }} interface=bridge1 }
 {% if device.gateway %}
-/ip route add dst-address=0.0.0.0/0 gateway={{ device.gateway }}
+:if ([:len [/ip route find dst-address="0.0.0.0/0" gateway="{{ device.gateway }}"]] = 0) do={ /ip route add dst-address=0.0.0.0/0 gateway={{ device.gateway }} }
 {% endif %}
 
 {% if ip_pools and ip_pools.length > 0 %}
 # IP Address Pools
 {% for pool in ip_pools %}
-/ip pool add name="{{ pool.name }}" ranges={{ pool.ranges }}
+:if ([:len [/ip pool find name="{{ pool.name }}"]] = 0) do={ /ip pool add name="{{ pool.name }}" ranges={{ pool.ranges }} }
 {% endfor %}
 {% endif %}
 
 {% if pppoe %}
 # PPPoE Bandwidth Profiles
 {% for profile in pppoe.profiles %}
-/ppp profile add name="{{ profile.name }}"{% if profile.local_address %} local-address={{ profile.local_address }}{% endif %} remote-address="{{ profile.remote_pool }}"{% if profile.dns_servers and profile.dns_servers.length > 0 %} dns-server={{ profile.dns_servers | join(",") }}{% endif %}{% if profile.rate_limit %} rate-limit="{{ profile.rate_limit }}"{% endif %}
-
+:if ([:len [/ppp profile find name="{{ profile.name }}"]] = 0) do={ /ppp profile add name="{{ profile.name }}"{% if profile.local_address %} local-address={{ profile.local_address }}{% endif %} remote-address="{{ profile.remote_pool }}"{% if profile.dns_servers and profile.dns_servers.length > 0 %} dns-server={{ profile.dns_servers | join(",") }}{% endif %}{% if profile.rate_limit %} rate-limit="{{ profile.rate_limit }}"{% endif %} }
 {% endfor %}
 
 # PPPoE Server Instance
-/interface pppoe-server server add service-name="{{ pppoe.service_name }}" interface={{ pppoe.interface }}{% if pppoe.default_profile %} default-profile="{{ pppoe.default_profile }}"{% endif %} authentication=pap,chap,mschap1,mschap2 one-session-per-host=yes disabled=no
+:if ([:len [/interface pppoe-server server find service-name="{{ pppoe.service_name }}"]] = 0) do={ /interface pppoe-server server add service-name="{{ pppoe.service_name }}" interface={{ pppoe.interface }}{% if pppoe.default_profile %} default-profile="{{ pppoe.default_profile }}"{% endif %} authentication=pap,chap,mschap1,mschap2 one-session-per-host=yes disabled=no }
 {% endif %}
-

@@ -2,24 +2,24 @@
 
 /system identity set name="{{ device.hostname }}"
 
-/interface bridge add name=bridge1 vlan-filtering=yes
+# Bridge Creation (Idempotent)
+:if ([:len [/interface bridge find name="bridge1"]] = 0) do={ /interface bridge add name=bridge1 vlan-filtering=yes }
 
 # Bridge Ports - Trunk
 {% for iface in interfaces.trunk %}
-/interface bridge port add bridge=bridge1 interface={{ iface }}
+:if ([:len [/interface bridge port find bridge="bridge1" interface="{{ iface }}"]] = 0) do={ /interface bridge port add bridge=bridge1 interface={{ iface }} }
 {% endfor %}
 
 {% if interfaces.access and interfaces.access.length > 0 %}
 # Bridge Ports - Access
 {% for acc in interfaces.access %}
-/interface bridge port add bridge=bridge1 interface={{ acc.name }} pvid={{ acc.vlan_id }}
+:if ([:len [/interface bridge port find bridge="bridge1" interface="{{ acc.name }}"]] = 0) do={ /interface bridge port add bridge=bridge1 interface={{ acc.name }} pvid={{ acc.vlan_id }} }
 {% endfor %}
 {% endif %}
 
 # VLAN Interfaces
 {% for vlan in vlans %}
-/interface vlan add interface=bridge1 name={{ vlan.name }} vlan-id={{ vlan.id }}{% if vlan.description %} comment="{{ vlan.description }}"{% endif %}
-
+:if ([:len [/interface vlan find name="{{ vlan.name }}"]] = 0) do={ /interface vlan add interface=bridge1 name={{ vlan.name }} vlan-id={{ vlan.id }}{% if vlan.description %} comment="{{ vlan.description }}"{% endif %} }
 {% endfor %}
 
 # Bridge VLAN Filtering Table
@@ -32,12 +32,11 @@
     {% endif %}
   {% endfor %}
 {% endif %}
-/interface bridge vlan add bridge=bridge1 tagged={{ interfaces.trunk | join(",") }}{% if untagged.length > 0 %} untagged={{ untagged | join(",") }}{% endif %} vlan-ids={{ vlan.id }}
+:if ([:len [/interface bridge vlan find bridge="bridge1" vlan-ids={{ vlan.id }}]] = 0) do={ /interface bridge vlan add bridge=bridge1 tagged={{ interfaces.trunk | join(",") }}{% if untagged.length > 0 %} untagged={{ untagged | join(",") }}{% endif %} vlan-ids={{ vlan.id }} }
 {% endfor %}
 
 # Management IP & Routing
-/ip address add address={{ device.mgmt_ip }} interface=bridge1
+:if ([:len [/ip address find address="{{ device.mgmt_ip }}" interface="bridge1"]] = 0) do={ /ip address add address={{ device.mgmt_ip }} interface=bridge1 }
 {% if device.gateway %}
-/ip route add dst-address=0.0.0.0/0 gateway={{ device.gateway }}
+:if ([:len [/ip route find dst-address="0.0.0.0/0" gateway="{{ device.gateway }}"]] = 0) do={ /ip route add dst-address=0.0.0.0/0 gateway={{ device.gateway }} }
 {% endif %}
-

@@ -38,24 +38,34 @@ const ciscoSample: NetworkData = {
 };
 
 describe("renderConfig", () => {
-  it("renders MikroTik RouterOS configuration with required commands and no HTML escaping", async () => {
+  it("renders MikroTik RouterOS configuration with idempotent guards and no HTML escaping", async () => {
     const output = await renderConfig(
       "templates/mikrotik/vlan_trunk.njk",
       mikrotikSample
     );
 
     expect(output).toContain('/system identity set name="RB-DIST-01"');
-    expect(output).toContain("/interface bridge add name=bridge1 vlan-filtering=yes");
-    expect(output).toContain("/interface bridge port add bridge=bridge1 interface=ether1");
-    expect(output).toContain("/interface bridge port add bridge=bridge1 interface=ether3 pvid=20");
     expect(output).toContain(
-      '/interface vlan add interface=bridge1 name=Management vlan-id=10 comment="Management Network"'
+      ':if ([:len [/interface bridge find name="bridge1"]] = 0) do={ /interface bridge add name=bridge1 vlan-filtering=yes }'
     );
     expect(output).toContain(
-      "/interface bridge vlan add bridge=bridge1 tagged=ether1,ether2 untagged=ether3 vlan-ids=20"
+      ':if ([:len [/interface bridge port find bridge="bridge1" interface="ether1"]] = 0) do={ /interface bridge port add bridge=bridge1 interface=ether1 }'
     );
-    expect(output).toContain("/ip address add address=192.168.88.2/24 interface=bridge1");
-    expect(output).toContain("/ip route add dst-address=0.0.0.0/0 gateway=192.168.88.1");
+    expect(output).toContain(
+      ':if ([:len [/interface bridge port find bridge="bridge1" interface="ether3"]] = 0) do={ /interface bridge port add bridge=bridge1 interface=ether3 pvid=20 }'
+    );
+    expect(output).toContain(
+      ':if ([:len [/interface vlan find name="Management"]] = 0) do={ /interface vlan add interface=bridge1 name=Management vlan-id=10 comment="Management Network" }'
+    );
+    expect(output).toContain(
+      ':if ([:len [/interface bridge vlan find bridge="bridge1" vlan-ids=20]] = 0) do={ /interface bridge vlan add bridge=bridge1 tagged=ether1,ether2 untagged=ether3 vlan-ids=20 }'
+    );
+    expect(output).toContain(
+      ':if ([:len [/ip address find address="192.168.88.2/24" interface="bridge1"]] = 0) do={ /ip address add address=192.168.88.2/24 interface=bridge1 }'
+    );
+    expect(output).toContain(
+      ':if ([:len [/ip route find dst-address="0.0.0.0/0" gateway="192.168.88.1"]] = 0) do={ /ip route add dst-address=0.0.0.0/0 gateway=192.168.88.1 }'
+    );
     expect(output).not.toContain("&quot;");
   });
 
@@ -105,19 +115,19 @@ describe("renderConfig", () => {
     ).rejects.toThrow(`File template tidak ditemukan di: ${missingTemplate}`);
   });
 
-  it("renders MikroTik ISP PPPoE template with ip pool, ppp profile, and pppoe-server", async () => {
+  it("renders MikroTik ISP PPPoE template with idempotent ip pool, ppp profile, and pppoe-server", async () => {
     const data = await parseConfigFile("data/samples/mikrotik_pppoe.yaml");
     const output = await renderConfig("templates/mikrotik/isp_pppoe.njk", data);
 
     expect(output).toContain('/system identity set name="RB-PPPOE-CORE-01"');
     expect(output).toContain(
-      '/ip pool add name="pool-pppoe-clients" ranges=100.64.10.2-100.64.10.254'
+      ':if ([:len [/ip pool find name="pool-pppoe-clients"]] = 0) do={ /ip pool add name="pool-pppoe-clients" ranges=100.64.10.2-100.64.10.254 }'
     );
     expect(output).toContain(
-      '/ppp profile add name="paket-10mbps" local-address=100.64.10.1 remote-address="pool-pppoe-clients" dns-server=1.1.1.1,8.8.8.8 rate-limit="10M/10M"'
+      ':if ([:len [/ppp profile find name="paket-10mbps"]] = 0) do={ /ppp profile add name="paket-10mbps" local-address=100.64.10.1 remote-address="pool-pppoe-clients" dns-server=1.1.1.1,8.8.8.8 rate-limit="10M/10M" }'
     );
     expect(output).toContain(
-      '/interface pppoe-server server add service-name="NETFORGE-ISP" interface=PPPoE-Access default-profile="paket-10mbps"'
+      ':if ([:len [/interface pppoe-server server find service-name="NETFORGE-ISP"]] = 0) do={ /interface pppoe-server server add service-name="NETFORGE-ISP" interface=PPPoE-Access default-profile="paket-10mbps" authentication=pap,chap,mschap1,mschap2 one-session-per-host=yes disabled=no }'
     );
     expect(output).not.toContain("&quot;");
   });

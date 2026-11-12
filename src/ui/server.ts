@@ -106,6 +106,10 @@ export function createUiApp(projectRoot = process.cwd()): Express {
 
   app.use(express.json({ limit: "1mb" }));
 
+  app.get("/favicon.ico", (_req: Request, res: Response) => {
+    res.status(204).end();
+  });
+
   app.get("/api/templates", async (_req: Request, res: Response) => {
     try {
       const templates = await scanTemplatesRecursively(
@@ -191,10 +195,6 @@ export function createUiApp(projectRoot = process.cwd()): Express {
         error instanceof Error ? error.message : "Gagal me-render konfigurasi.";
       res.status(400).json({ success: false, error: message });
     }
-  });
-
-  app.get("/favicon.ico", (_req: Request, res: Response) => {
-    res.status(204).end();
   });
 
   app.use(express.static(publicDir));
