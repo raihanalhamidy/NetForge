@@ -17,16 +17,27 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-24%20passed-6E9F18?logo=vitest&logoColor=white)](tests/)
+[![Vitest](https://img.shields.io/badge/Vitest-30%20passed-6E9F18?logo=vitest&logoColor=white)](tests/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
+[Fitur Utama](#fitur-utama) •
 [Quickstart](#quickstart-3-langkah) •
 [Arsitektur](#arsitektur-sistem) •
 [Demo Terminal](#showcase--terminal-preview) •
-[Dukungan Vendor](#dukungan-vendor--perbandingan-fitur) •
+[Katalog Template](#dukungan-vendor--katalog-template) •
 [Kontribusi](#panduan-kontribusi)
 
 </div>
+
+---
+
+## Fitur Utama
+
+NetForge menyediakan 3 mode kerja yang saling melengkapi sesuai kebutuhan tim jaringan:
+
+- 💻 **CLI Generator (`netforge build`)**: Kompilasi script konfigurasi perangkat secara deklaratif dari YAML dan template Nunjucks lewat command line atau pipeline CI/CD.
+- 🧙‍♂️ **Interactive Wizard (`netforge init`)**: Pembuatan file konfigurasi YAML secara interaktif via terminal prompts tanpa harus menulis struktur dari nol.
+- 🌐 **Local Web Studio (`netforge ui`)**: Dashboard web lokal interaktif dengan *split-screen editor* YAML, *live preview render*, validasi real-time Zod, *copy to clipboard*, dan *direct download* file `.rsc`/`.cfg`.
 
 ---
 
@@ -212,16 +223,16 @@ end
 
 ---
 
-## Dukungan Vendor & Perbandingan Fitur
+## Dukungan Vendor & Katalog Template
 
-| Vendor / Skenario | Status | Template | Sample Data | Fitur Konfigurasi |
-| --- | --- | --- | --- | --- |
-| **MikroTik RouterOS v7 (VLAN & Trunk)** | ✅ Didukung | [`templates/mikrotik/vlan_trunk.njk`](templates/mikrotik/vlan_trunk.njk) | [`mikrotik_vlan.yaml`](data/samples/mikrotik_vlan.yaml) | Identity, Bridge VLAN Filtering, Tagged/Untagged Ports, VLAN Interfaces, Management IP & Default Route |
-| **MikroTik ISP / RT-RW Net** | ✅ Didukung | [`templates/mikrotik/isp_pppoe.njk`](templates/mikrotik/isp_pppoe.njk) | [`mikrotik_pppoe.yaml`](data/samples/mikrotik_pppoe.yaml) | IP Pool, PPP Profile tier bandwidth (`rate-limit`), DNS Server, dan PPPoE Server binding |
-| **Cisco IOS** | ✅ Didukung | [`templates/cisco/vlan_access.njk`](templates/cisco/vlan_access.njk) | [`cisco_vlan.yaml`](data/samples/cisco_vlan.yaml) | Hostname, VLAN Database, Management SVI (`ip_only` & `subnet_mask`), Dot1Q Trunk, Access Portfast |
-| **GPON OLT Provisioning** | ✅ Didukung | [`templates/olt/gpon_profile.njk`](templates/olt/gpon_profile.njk) | [`olt_gpon.yaml`](data/samples/olt_gpon.yaml) | DBA profile, ONT line/service profile, dan service-port VLAN mapping (VSOL / ZTE / Generic) |
-| **OpenWrt** | 🚧 Planned *(PR Welcome)* | `templates/openwrt/` *(via `vendor: generic`)* | — | UCI Network Config & DSA Bridge VLAN |
-| **VyOS** | 🚧 Planned *(PR Welcome)* | `templates/vyos/` *(via `vendor: generic`)* | — | `set interfaces` & VLAN VIF |
+| Vendor / Platform | Template | Sample Data | Kegunaan & Fitur Konfigurasi |
+| --- | --- | --- | --- |
+| **MikroTik RouterOS v7** | [`templates/mikrotik/vlan_trunk.njk`](templates/mikrotik/vlan_trunk.njk) | [`mikrotik_vlan.yaml`](data/samples/mikrotik_vlan.yaml) | Bridge VLAN filtering, Trunk/Access tagging, VLAN interfaces, IP management & route |
+| **MikroTik RouterOS v7** | [`templates/mikrotik/isp_pppoe.njk`](templates/mikrotik/isp_pppoe.njk) | [`mikrotik_pppoe.yaml`](data/samples/mikrotik_pppoe.yaml) | IP Pool, PPP bandwidth profiles (`rate-limit`), DNS Server, dan PPPoE Server binding |
+| **Cisco IOS** | [`templates/cisco/vlan_access.njk`](templates/cisco/vlan_access.njk) | [`cisco_vlan.yaml`](data/samples/cisco_vlan.yaml) | Database VLAN, `Vlan1` IP management (`ip_only` & `subnet_mask`), Trunk & Access ports |
+| **OLT GPON / EPON** | [`templates/olt/gpon_profile.njk`](templates/olt/gpon_profile.njk) | [`olt_gpon.yaml`](data/samples/olt_gpon.yaml) | DBA profiles, ONT line/service profiles, dan service-port VLAN mapping (VSOL / ZTE) |
+| **OpenWrt** *(Planned)* | `templates/openwrt/` *(via `vendor: generic`)* | — | UCI Network Config & DSA Bridge VLAN *(PR Welcome)* |
+| **VyOS** *(Planned)* | `templates/vyos/` *(via `vendor: generic`)* | — | `set interfaces` & VLAN VIF *(PR Welcome)* |
 
 > **Catatan**: Kontributor dapat langsung menambahkan template `.njk` untuk OpenWrt, VyOS, atau vendor lain menggunakan `vendor: "generic"` tanpa mengubah kode TypeScript inti.
 
@@ -235,27 +246,39 @@ Pastikan **Node.js >= 20** dan **npm** telah terpasang.
 # 1. Clone & install dependencies
 git clone https://github.com/raihanalhamidy/NetForge.git && cd NetForge && npm install
 
-# 2. Build CLI bundle
+# 2. Build CLI bundle (opsional: jalankan `npm link` agar perintah `netforge` tersedia global)
 npm run build
 
 # 3. Generate konfigurasi dalam satu baris perintah (contoh Cisco IOS)
 node dist/index.js build -t templates/cisco/vlan_access.njk -d data/samples/cisco_vlan.yaml -o output/cisco-switch.cfg
 ```
 
-### Contoh Skenario Lapangan (ISP PPPoE & OLT GPON)
+### 🌐 Menjalankan Local Web Studio (`netforge ui`)
 
 ```bash
-# Render konfigurasi MikroTik PPPoE Server (ISP / RT-RW Net)
-node dist/index.js build -t templates/mikrotik/isp_pppoe.njk -d data/samples/mikrotik_pppoe.yaml -o output/pppoe-server.rsc
+# Menjalankan Web Studio lokal di browser (default port 3000)
+netforge ui
 
-# Render konfigurasi OLT GPON Provisioning (VSOL/ZTE/Generic)
-node dist/index.js build -t templates/olt/gpon_profile.njk -d data/samples/olt_gpon.yaml -o output/olt-gpon.cfg
+# Kustomisasi port atau tanpa auto-open
+netforge ui -p 8080 --no-open
 ```
 
-Ingin membuat data YAML sendiri terlebih dahulu? Jalankan wizard interaktif:
+*(Jika belum menjalankan `npm link`, ganti `netforge` dengan `node dist/index.js`, misalnya `node dist/index.js ui`.)*
+
+### 💻 Contoh Command `build` (ISP PPPoE & OLT GPON)
 
 ```bash
-node dist/index.js init -o data/my-device.yaml
+# Generate MikroTik PPPoE Server Script
+netforge build -t templates/mikrotik/isp_pppoe.njk -d data/samples/mikrotik_pppoe.yaml -o dist/pppoe.rsc
+
+# Generate OLT GPON Profile Config
+netforge build -t templates/olt/gpon_profile.njk -d data/samples/olt_gpon.yaml -o dist/olt.cfg
+```
+
+### 🧙‍♂️ Membuat Input YAML Secara Interaktif (`netforge init`)
+
+```bash
+netforge init -o data/my-device.yaml
 ```
 
 <details>
@@ -269,14 +292,16 @@ node dist/index.js init -o data/my-device.yaml
 | `netforge build` | `-t, --template <path>` *(wajib)* | Path ke file template Nunjucks (`.njk`) |
 | `netforge build` | `-d, --data <path>` *(wajib)* | Path ke file data input YAML |
 | `netforge build` | `-o, --output <path>` *(opsional)* | Simpan hasil ke file; jika kosong, dicetak ke `stdout` |
+| `netforge ui` | `-p, --port <number>` | Port server Web Studio lokal (default: `3000`) |
+| `netforge ui` | `--no-open` | Jalankan server tanpa membuka browser otomatis |
 
 ### Scripts Pengembangan
 
 ```bash
 npm run dev "--" build -t templates/mikrotik/vlan_trunk.njk -d data/samples/mikrotik_vlan.yaml
 npm run lint   # Cek tipe TypeScript (tsc --noEmit)
-npm test       # Jalankan unit test Vitest (24 test cases)
-npm run build  # Build ESM & deklarasi tipe (tsup)
+npm test       # Jalankan unit test Vitest (30 test cases)
+npm run build  # Build ESM, deklarasi tipe, dan salin aset Web UI (tsup)
 ```
 
 </details>
@@ -297,9 +322,12 @@ NetForge/
 ├── data/
 │   └── samples/                         # Contoh input YAML (MikroTik VLAN/PPPoE, Cisco, OLT)
 ├── src/
-│   ├── commands/                        # Handler subcommand CLI (init, build)
+│   ├── commands/                        # Handler subcommand CLI (init, build, ui)
 │   ├── core/                            # Validator Zod, Parser YAML, Renderer Nunjucks
 │   ├── types/                           # Definisi tipe TypeScript
+│   ├── ui/
+│   │   ├── public/index.html            # Frontend SPA Local Web Studio
+│   │   └── server.ts                    # Express API & static server untuk Web Studio
 │   └── index.ts                         # Entry point CLI Commander
 ├── templates/                           # 📍 Lokasi template vendor (.njk)
 │   ├── mikrotik/
@@ -309,7 +337,7 @@ NetForge/
 │   │   └── vlan_access.njk
 │   └── olt/
 │       └── gpon_profile.njk
-├── tests/                               # Unit test Vitest (validator, parser, renderer)
+├── tests/                               # Unit test Vitest (validator, parser, renderer, ui)
 ├── CONTRIBUTING.md
 └── LICENSE
 ```

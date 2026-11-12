@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>NetForge — Local Web GUI Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --scrollbar-track: #0b1120;
+        --scrollbar-thumb: #334155;
+        scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+      }
+
+      @supports not (scrollbar-color: auto) {
+        *::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+        *::-webkit-scrollbar-track {
+          background: var(--scrollbar-track);
+        }
+        *::-webkit-scrollbar-thumb {
+          background: var(--scrollbar-thumb);
+          border-radius: 9999px;
+        }
+      }
+
+      body {
+        background:
+          radial-gradient(circle at 15% 10%, rgba(14, 165, 233, 0.14), transparent 36%),
+          radial-gradient(circle at 85% 15%, rgba(16, 185, 129, 0.12), transparent 34%),
+          #060b16;
+        color: #e2e8f0;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .glass-panel {
+        background: rgba(15, 23, 42, 0.72);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+      }
+
+      .mono-code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-variant-ligatures: none;
+      }
+
+      :where(button, select, textarea, a):focus-visible {
+        outline: 2px solid #38bdf8;
+        outline-offset: 2px;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      .tok-comment {
+        color: #64748b;
+        font-style: italic;
+      }
+      .tok-command {
+        color: #38bdf8;
+      }
+      .tok-keyword {
+        color: #34d399;
+      }
+      .tok-string {
+        color: #fbbf24;
+      }
+      .tok-ip {
+        color: #c084fc;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col antialiased">
+    <header class="sticky top-0 z-20 glass-panel border-x-0 border-t-0">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div
+            class="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500/25 to-emerald-500/25 border border-sky-400/30 flex items-center justify-center text-sky-300"
+            aria-hidden="true"
+          >
+            <i data-lucide="zap" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold tracking-tight text-white leading-tight">
+              NetForge <span class="text-sky-400 font-medium text-sm">Web Studio</span>
+            </h1>
+            <p class="text-xs text-slate-400">
+              Declarative Multi-Vendor Network Config Generator
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 text-xs">
+          <span
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium"
+          >
+            <span class="relative flex h-2 w-2" aria-hidden="true">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            </span>
+            Server Online
+          </span>
+          <span
+            id="port-badge"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-slate-300 mono-code"
+          >
+            <i data-lucide="server" class="w-3.5 h-3.5 text-sky-400" aria-hidden="true"></i>
+            <span id="host-port-text">localhost:3000</span>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 flex flex-col gap-4">
+      <!-- Toolbar -->
+      <section class="glass-panel rounded-2xl p-4 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+          <div class="flex flex-col gap-1.5">
+            <label for="template-select" class="text-xs font-semibold uppercase tracking-wider text-slate-300">
+              Vendor Template (.njk)
+            </label>
+            <select
+              id="template-select"
+              class="min-h-[40px] w-full rounded-xl bg-slate-900/90 border border-slate-700/80 px-3 py-2 text-sm text-slate-100 mono-code"
+            >
+              <option value="">Memuat daftar template...</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="sample-select" class="text-xs font-semibold uppercase tracking-wider text-slate-300">
+              Preset Sample YAML
+            </label>
+            <div class="flex gap-2">
+              <select
+                id="sample-select"
+                class="min-h-[40px] flex-1 rounded-xl bg-slate-900/90 border border-slate-700/80 px-3 py-2 text-sm text-slate-100 mono-code"
+              >
+                <option value="">Memuat daftar sample...</option>
+              </select>
+              <button
+                id="load-sample-btn"
+                type="button"
+                class="min-h-[40px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600/80 text-sm font-medium text-slate-100 inline-flex items-center gap-2 transition cursor-pointer whitespace-nowrap"
+              >
+                <i data-lucide="file-down" class="w-4 h-4 text-amber-300" aria-hidden="true"></i>
+                Load Sample Data
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button
+            id="render-btn"
+            type="button"
+            class="min-h-[40px] w-full lg:w-auto px-5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-400 hover:to-emerald-400 text-slate-950 font-semibold text-sm inline-flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 transition cursor-pointer"
+          >
+            <i data-lucide="play" class="w-4 h-4" aria-hidden="true"></i>
+            Render Config
+          </button>
+        </div>
+      </section>
+
+      <!-- Dynamic Error Banner -->
+      <div
+        id="error-banner"
+        role="alert"
+        hidden
+        class="hidden rounded-2xl bg-rose-950/85 border border-rose-500/60 px-4 py-3.5 text-rose-100 flex items-start gap-3 shadow-lg shadow-rose-950/40"
+      >
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5" aria-hidden="true"></i>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-rose-200">Validasi / Render Gagal</p>
+          <pre id="error-message" class="mt-1 text-xs text-rose-100/95 mono-code whitespace-pre-wrap break-words"></pre>
+        </div>
+      </div>
+
+      <!-- Success Toast Notification -->
+      <div
+        id="success-toast"
+        role="status"
+        aria-live="polite"
+        hidden
+        class="hidden fixed bottom-5 right-5 z-50 rounded-xl bg-emerald-950/95 border border-emerald-500/50 px-4 py-3 text-emerald-100 flex items-center gap-2.5 shadow-xl shadow-emerald-950/50 backdrop-blur-md"
+      >
+        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true"></i>
+        <span id="success-toast-text" class="text-sm font-medium">✔ Konfigurasi berhasil di-render!</span>
+      </div>
+
+      <!-- Split Pane 2 Columns -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-[520px]">
+        <!-- Left Pane: YAML Editor -->
+        <div class="glass-panel rounded-2xl flex flex-col overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-800/90 flex items-center justify-between gap-2 bg-slate-900/50">
+            <div class="flex items-center gap-2">
+              <i data-lucide="file-code-2" class="w-4 h-4 text-amber-300" aria-hidden="true"></i>
+              <label for="yaml-editor" class="text-sm font-semibold text-slate-100">
+                Input Data YAML
+              </label>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-400 mono-code">
+              <span id="line-counter">1 baris</span>
+              <span class="text-slate-600">•</span>
+              <span>Ctrl+Enter untuk render</span>
+            </div>
+          </div>
+
+          <textarea
+            id="yaml-editor"
+            spellcheck="false"
+            autocomplete="off"
+            aria-label="Editor input konfigurasi YAML"
+            placeholder="Pilih preset di atas atau tulis konfigurasi YAML NetForge di sini..."
+            class="flex-1 w-full min-h-[420px] p-4 bg-slate-950/60 text-slate-100 text-xs sm:text-sm leading-6 mono-code resize-none border-0 focus:ring-0"
+          ></textarea>
+        </div>
+
+        <!-- Right Pane: Output Preview -->
+        <div class="glass-panel rounded-2xl flex flex-col overflow-hidden">
+          <div class="px-4 py-2.5 border-b border-slate-800/90 flex flex-wrap items-center justify-between gap-2 bg-slate-900/50">
+            <div class="flex items-center gap-2">
+              <i data-lucide="terminal" class="w-4 h-4 text-emerald-400" aria-hidden="true"></i>
+              <h2 class="text-sm font-semibold text-slate-100">Output Preview</h2>
+              <span
+                id="output-meta"
+                hidden
+                class="px-2 py-0.5 rounded-md bg-sky-500/15 border border-sky-400/30 text-sky-300 text-xs mono-code"
+              ></span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span id="copy-status" aria-live="polite" class="text-xs text-emerald-300 font-medium"></span>
+              <button
+                id="copy-btn"
+                type="button"
+                class="min-h-[34px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200 inline-flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <i data-lucide="copy" class="w-3.5 h-3.5" aria-hidden="true"></i>
+                Copy Script
+              </button>
+              <button
+                id="download-btn"
+                type="button"
+                class="min-h-[34px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200 inline-flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-300" aria-hidden="true"></i>
+                Download File
+              </button>
+            </div>
+          </div>
+
+          <pre
+            class="flex-1 min-h-[420px] p-4 bg-slate-950/80 text-xs sm:text-sm leading-6 mono-code overflow-auto m-0"
+          ><code id="output-preview" class="text-slate-300">Klik "Render Config" untuk melihat hasil script konfigurasi perangkat di sini.</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const templateSelect = document.getElementById("template-select");
+      const sampleSelect = document.getElementById("sample-select");
+      const loadSampleBtn = document.getElementById("load-sample-btn");
+      const renderBtn = document.getElementById("render-btn");
+      const yamlEditor = document.getElementById("yaml-editor");
+      const lineCounter = document.getElementById("line-counter");
+      const outputPreview = document.getElementById("output-preview");
+      const outputMeta = document.getElementById("output-meta");
+      const errorBanner = document.getElementById("error-banner");
+      const errorMessage = document.getElementById("error-message");
+      const successToast = document.getElementById("success-toast");
+      const successToastText = document.getElementById("success-toast-text");
+      const copyBtn = document.getElementById("copy-btn");
+      const copyStatus = document.getElementById("copy-status");
+      const downloadBtn = document.getElementById("download-btn");
+      const hostPortText = document.getElementById("host-port-text");
+
+      let loadedSamples = [];
+      let latestRenderedText = "";
+      let latestMeta = null;
+      let toastTimer = null;
+
+      hostPortText.textContent = window.location.host || "localhost:3000";
+
+      function updateLineCounter() {
+        const lines = yamlEditor.value.length === 0 ? 1 : yamlEditor.value.split(/\r?\n/).length;
+        lineCounter.textContent = `${lines} baris`;
+      }
+
+      function clearError() {
+        errorMessage.textContent = "";
+        errorBanner.hidden = true;
+        errorBanner.classList.add("hidden");
+      }
+
+      function clearSuccessToast() {
+        if (toastTimer) {
+          clearTimeout(toastTimer);
+          toastTimer = null;
+        }
+        successToast.hidden = true;
+        successToast.classList.add("hidden");
+      }
+
+      function clearAlerts() {
+        clearError();
+        clearSuccessToast();
+      }
+
+      function showSuccessToast(message) {
+        clearSuccessToast();
+        successToastText.textContent = message;
+        successToast.hidden = false;
+        successToast.classList.remove("hidden");
+        toastTimer = setTimeout(() => {
+          clearSuccessToast();
+        }, 3500);
+      }
+
+      function showOutputErrorPlaceholder() {
+        latestRenderedText = "";
+        latestMeta = null;
+        outputMeta.textContent = "";
+        outputMeta.hidden = true;
+        outputPreview.textContent = "";
+        const errSpan = document.createElement("span");
+        errSpan.className = "text-rose-400";
+        errSpan.textContent =
+          "✖ Render dibatalkan karena terdapat error pada input YAML atau skema validasi.\nPeriksa detail pesan error di banner merah di atas.";
+        outputPreview.appendChild(errSpan);
+      }
+
+      function showError(msg, resetPreview = false) {
+        clearSuccessToast();
+        errorMessage.textContent = msg;
+        errorBanner.hidden = false;
+        errorBanner.classList.remove("hidden");
+        if (resetPreview) {
+          showOutputErrorPlaceholder();
+        }
+      }
+
+      function appendTokenSpan(parent, text, className) {
+        if (!className) {
+          parent.appendChild(document.createTextNode(text));
+          return;
+        }
+        const span = document.createElement("span");
+        span.className = className;
+        span.textContent = text;
+        parent.appendChild(span);
+      }
+
+      function renderHighlightedLine(container, line) {
+        const trimmed = line.trimStart();
+        if (trimmed.startsWith("#") || trimmed.startsWith("!")) {
+          appendTokenSpan(container, line, "tok-comment");
+          return;
+        }
+
+        const tokenPattern = /("[^"]*"|\b\d{1,3}(?:\.\d{1,3}){3}(?:\/\d{1,2})?\b|\/[a-z0-9-]+|\b(?:hostname|interface|vlan|switchport|dba-profile|ont-lineprofile|ont-srvprofile|service-port|ip|end|exit|write)\b)/gi;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = tokenPattern.exec(line)) !== null) {
+          if (match.index > lastIndex) {
+            appendTokenSpan(container, line.slice(lastIndex, match.index), null);
+          }
+
+          const token = match[0];
+          let cls = "tok-keyword";
+          if (token.startsWith('"')) {
+            cls = "tok-string";
+          } else if (token.startsWith("/")) {
+            cls = "tok-command";
+          } else if (/^\d{1,3}\./.test(token)) {
+            cls = "tok-ip";
+          }
+
+          appendTokenSpan(container, token, cls);
+          lastIndex = tokenPattern.lastIndex;
+        }
+
+        if (lastIndex < line.length) {
+          appendTokenSpan(container, line.slice(lastIndex), null);
+        }
+      }
+
+      function displayRenderedOutput(text, meta) {
+        latestRenderedText = text;
+        latestMeta = meta || null;
+        outputPreview.textContent = "";
+
+        const lines = text.split(/\r?\n/);
+        lines.forEach((line, index) => {
+          renderHighlightedLine(outputPreview, line);
+          if (index < lines.length - 1) {
+            outputPreview.appendChild(document.createTextNode("\n"));
+          }
+        });
+
+        if (meta && meta.hostname) {
+          outputMeta.textContent = `${meta.hostname} (${meta.vendor})`;
+          outputMeta.hidden = false;
+        } else {
+          outputMeta.hidden = true;
+        }
+      }
+
+      function pickMatchingSampleForTemplate(templatePath) {
+        if (!templatePath || loadedSamples.length === 0) return;
+        const lower = templatePath.toLowerCase();
+        let preferred = null;
+
+        if (lower.includes("isp_pppoe")) {
+          preferred = loadedSamples.find((s) => s.name.includes("pppoe"));
+        } else if (lower.includes("mikrotik")) {
+          preferred = loadedSamples.find((s) => s.name.includes("mikrotik_vlan"));
+        } else if (lower.includes("cisco")) {
+          preferred = loadedSamples.find((s) => s.name.includes("cisco"));
+        } else if (lower.includes("olt")) {
+          preferred = loadedSamples.find((s) => s.name.includes("olt"));
+        }
+
+        if (preferred) {
+          sampleSelect.value = preferred.path;
+        }
+      }
+
+      function applySelectedSample() {
+        clearAlerts();
+        const selected = loadedSamples.find((s) => s.path === sampleSelect.value);
+        if (!selected) return;
+        yamlEditor.value = selected.content;
+        updateLineCounter();
+      }
+
+      async function performRender(options = {}) {
+        const templatePath = templateSelect.value;
+        const yamlContent = yamlEditor.value;
+
+        clearAlerts();
+        renderBtn.disabled = true;
+
+        try {
+          const response = await fetch("/api/render", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ templatePath, yamlContent }),
+          });
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            showError(
+              data.error || "Terjadi kesalahan saat memproses konfigurasi.",
+              true
+            );
+            return;
+          }
+
+          clearError();
+          displayRenderedOutput(data.result, data.meta);
+          if (!options.silentToast) {
+            showSuccessToast("✔ Konfigurasi berhasil di-render!");
+          }
+        } catch (err) {
+          showError(
+            err instanceof Error ? err.message : "Koneksi ke server lokal gagal.",
+            true
+          );
+        } finally {
+          renderBtn.disabled = false;
+        }
+      }
+
+      async function bootstrapDashboard() {
+        try {
+          const [tplRes, sampleRes] = await Promise.all([
+            fetch("/api/templates"),
+            fetch("/api/samples"),
+          ]);
+          const tplData = await tplRes.json();
+          const sampleData = await sampleRes.json();
+
+          templateSelect.textContent = "";
+          const templates = tplData.templates || [];
+          if (templates.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "Tidak ada file .njk di templates/";
+            templateSelect.appendChild(opt);
+          } else {
+            templates.forEach((tplPath) => {
+              const opt = document.createElement("option");
+              opt.value = tplPath;
+              opt.textContent = tplPath;
+              templateSelect.appendChild(opt);
+            });
+          }
+
+          loadedSamples = sampleData.samples || [];
+          sampleSelect.textContent = "";
+          if (loadedSamples.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "Tidak ada sample di data/samples/";
+            sampleSelect.appendChild(opt);
+          } else {
+            loadedSamples.forEach((sample) => {
+              const opt = document.createElement("option");
+              opt.value = sample.path;
+              opt.textContent = sample.name;
+              sampleSelect.appendChild(opt);
+            });
+            pickMatchingSampleForTemplate(templateSelect.value);
+            applySelectedSample();
+            await performRender({ silentToast: true });
+          }
+        } catch (err) {
+          showError(
+            err instanceof Error
+              ? `Gagal memuat inisialisasi dashboard: ${err.message}`
+              : "Gagal memuat inisialisasi dashboard."
+          );
+        }
+      }
+
+      yamlEditor.addEventListener("input", updateLineCounter);
+      yamlEditor.addEventListener("keydown", (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+          event.preventDefault();
+          void performRender();
+        }
+      });
+
+      templateSelect.addEventListener("change", () => {
+        pickMatchingSampleForTemplate(templateSelect.value);
+      });
+
+      loadSampleBtn.addEventListener("click", () => {
+        clearAlerts();
+        applySelectedSample();
+        void performRender();
+      });
+
+      renderBtn.addEventListener("click", () => {
+        clearAlerts();
+        void performRender();
+      });
+
+      copyBtn.addEventListener("click", async () => {
+        if (!latestRenderedText) {
+          showError("Belum ada hasil script konfigurasi untuk disalin.");
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(latestRenderedText);
+          copyStatus.textContent = "Disalin!";
+          setTimeout(() => {
+            copyStatus.textContent = "";
+          }, 2000);
+        } catch {
+          showError("Browser memblokir akses clipboard otomatis.");
+        }
+      });
+
+      downloadBtn.addEventListener("click", () => {
+        if (!latestRenderedText) {
+          showError("Belum ada hasil script konfigurasi untuk diunduh.");
+          return;
+        }
+        const tplLower = (templateSelect.value || "").toLowerCase();
+        const isMikrotik =
+          (latestMeta && latestMeta.vendor === "mikrotik") || tplLower.includes("mikrotik");
+        const ext = isMikrotik ? "rsc" : "cfg";
+        const baseName =
+          latestMeta && latestMeta.hostname
+            ? latestMeta.hostname.toLowerCase().replace(/[^a-z0-9-_]+/g, "-")
+            : "netforge-output";
+
+        const blob = new Blob([latestRenderedText], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${baseName}.${ext}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+      }
+      updateLineCounter();
+      void bootstrapDashboard();
+    </script>
+  </body>
+</html>
+

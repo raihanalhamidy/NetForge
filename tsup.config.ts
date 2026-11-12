@@ -1,3 +1,4 @@
+import { cp } from "node:fs/promises";
 import { defineConfig } from "tsup";
 
 export default defineConfig({
@@ -8,5 +9,7 @@ export default defineConfig({
   banner: {
     js: "#!/usr/bin/env node",
   },
+  async onSuccess() {
+    await cp("src/ui/public", "dist/public", { recursive: true });
+  },
 });
-

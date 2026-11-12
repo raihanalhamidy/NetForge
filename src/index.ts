@@ -2,6 +2,7 @@ import { Command } from "commander";
 import pc from "picocolors";
 import { handleBuildCommand } from "./commands/build.js";
 import { handleInitCommand } from "./commands/init.js";
+import { handleUiCommand } from "./commands/ui.js";
 
 const program = new Command();
 
@@ -37,6 +38,13 @@ program
   .requiredOption("-d, --data <path>", "Path ke file data input YAML")
   .option("-o, --output <path>", "Path output file konfigurasi")
   .action(handleBuildCommand);
+
+program
+  .command("ui")
+  .description("Jalankan Local Web GUI Dashboard di browser")
+  .option("-p, --port <number>", "Port server Web UI", "3000")
+  .option("--no-open", "Jangan buka browser secara otomatis")
+  .action(handleUiCommand);
 
 program.parseAsync(process.argv).catch((error: unknown) => {
   const message =
