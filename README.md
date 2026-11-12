@@ -47,24 +47,40 @@ npm run build
 
 ## Panduan Penggunaan CLI
 
+### A. Membuat File Input YAML Secara Interaktif (`init`)
+
+Gunakan perintah `init` untuk menjalankan wizard interaktif yang memandu pengisian hostname, vendor, IP management, gateway, daftar VLAN, dan interface trunk/access:
+
+```bash
+node dist/index.js init
+```
+
+Untuk menentukan lokasi output file YAML secara spesifik, gunakan opsi `-o, --output <path>` (default: `./netforge-config.yaml`):
+
+```bash
+node dist/index.js init -o data/my-switch.yaml
+```
+
+### B. Generate Konfigurasi Perangkat (`build`)
+
 Gunakan perintah `build` dengan opsi:
 - `-t, --template <path>` *(wajib)*: Path ke file template Nunjucks (`.njk`).
 - `-d, --data <path>` *(wajib)*: Path ke file variabel konfigurasi YAML.
 - `-o, --output <path>` *(opsional)*: Path file output. Jika tidak diisi, hasil dicetak langsung ke terminal.
 
-### 1. Menampilkan hasil ke terminal (MikroTik RouterOS)
+#### 1. Menampilkan hasil ke terminal (MikroTik RouterOS)
 
 ```bash
 node dist/index.js build -t templates/mikrotik/vlan_trunk.njk -d data/samples/mikrotik_vlan.yaml
 ```
 
-### 2. Menyimpan hasil ke file konfigurasi (Cisco IOS)
+#### 2. Menyimpan hasil ke file konfigurasi (Cisco IOS)
 
 ```bash
 node dist/index.js build -t templates/cisco/vlan_access.njk -d data/samples/cisco_vlan.yaml -o output/cisco-switch.cfg
 ```
 
-*(Selama pengembangan tanpa build ulang, Anda juga dapat menjalankan `npm run dev -- build -t ... -d ...`.)*
+*(Selama pengembangan tanpa build ulang, Anda juga dapat menjalankan `npm run dev -- init` atau `npm run dev -- build -t ... -d ...`.)*
 
 ---
 
@@ -106,7 +122,7 @@ NetForge/
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── data/samples/              # Contoh data input YAML MikroTik & Cisco
 ├── src/
-│   ├── commands/              # Handler command CLI (build)
+│   ├── commands/              # Handler command CLI (init, build)
 │   ├── core/                  # Validator Zod, Parser YAML, Renderer Nunjucks
 │   ├── types/                 # Definisi tipe TypeScript
 │   └── index.ts               # Entry point CLI Commander

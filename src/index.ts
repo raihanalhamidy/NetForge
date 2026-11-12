@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import pc from "picocolors";
 import { handleBuildCommand } from "./commands/build.js";
+import { handleInitCommand } from "./commands/init.js";
 
 const program = new Command();
 
@@ -14,6 +15,18 @@ program
   .configureOutput({
     outputError: (str, write) => write(pc.red(str)),
   });
+
+program
+  .command("init")
+  .description(
+    "Jalankan wizard interaktif untuk membuat file konfigurasi YAML baru"
+  )
+  .option(
+    "-o, --output <path>",
+    "Path file YAML hasil generate",
+    "./netforge-config.yaml"
+  )
+  .action(handleInitCommand);
 
 program
   .command("build")
