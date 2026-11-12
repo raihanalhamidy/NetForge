@@ -110,5 +110,61 @@ describe("validateNetworkData", () => {
     expect(() => validateNetworkData(input)).toThrow(NetworkValidationError);
     expect(() => validateNetworkData(input)).toThrow(/device\.vendor/);
   });
+
+  it("accepts optional ip_pools, pppoe, and olt fields when valid", () => {
+    const input = {
+      ...createValidData(),
+      ip_pools: [
+        { name: "pool-pppoe", ranges: "100.64.10.2-100.64.10.254" },
+      ],
+      pppoe: {
+        service_name: "ISP-PPPOE",
+        interface: "vlan100",
+        default_profile: "10M",
+        profiles: [
+          {
+            name: "10M",
+            local_address: "100.64.10.1",
+            remote_pool: "pool-pppoe",
+            rate_limit: "10M/10M",
+            dns_servers: ["1.1.1.1", "8.8.8.8"],
+          },
+        ],
+      },
+      olt: {
+        vendor: "vsol" as const,
+        pon_ports: [1, 2],
+        dba_profiles: [{ id: 10, name: "DBA-100M", bandwidth_kbps: 102400 }],
+        ont_profiles: [
+          {
+            profile_id: 10,
+            name: "ONT-INET",
+            vlan_id: 100,
+            upload_limit: "20M",
+            download_limit: "20M",
+          },
+        ],
+      },
+    };
+
+    const result = validateNetworkData(input);
+    expect(result.ip_pools).toHaveLength(1);
+    expect(result.pppoe?.profiles).toHaveLength(1);
+    expect(result.olt?.vendor).toBe("vsol");
+  });
+
+  it("rejects invalid ip_pools range format and invalid OLT ONT VLAN ID", () => {
+    const input = {
+      ...createValidData(),
+      ip_pools: [{ name: "bad-pool", ranges: "not-an-ip-range" }],
+      olt: {
+        vendor: "zte" as const,
+        ont_profiles: [{ profile_id: 1, name: "BAD-ONT", vlan_id: 5000 }],
+      },
+    };
+
+    expect(() => validateNetworkData(input)).toThrow(NetworkValidationError);
+    expect(() => validateNetworkData(input)).toThrow(/ip_pools\.0\.ranges/);
+  });
 });
 

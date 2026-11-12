@@ -1,21 +1,24 @@
 import { z } from "zod";
 import type { NetworkData } from "../types/config.js";
 
-const IPV4_REGEX =
-  /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
+const IPV4_PATTERN =
+  "(?:(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)";
 
-const IPV4_CIDR_REGEX =
-  /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\/(?:3[0-2]|[12]?\d)$/;
+const IPV4_REGEX = new RegExp(`^${IPV4_PATTERN}$`);
+const IPV4_CIDR_REGEX = new RegExp(`^${IPV4_PATTERN}\\/(?:3[0-2]|[12]?\\d)$`);
+const IPV4_RANGE_REGEX = new RegExp(`^${IPV4_PATTERN}-${IPV4_PATTERN}$`);
+
+const vlanIdSchema = z
+  .number()
+  .int("VLAN ID must be an integer")
+  .min(1, "VLAN ID must be at least 1")
+  .max(4094, "VLAN ID must be at most 4094");
 
 /**
  * Runtime validation schema for a single VLAN entry.
  */
 export const vlanSchema = z.object({
-  id: z
-    .number()
-    .int("VLAN ID must be an integer")
-    .min(1, "VLAN ID must be at least 1")
-    .max(4094, "VLAN ID must be at most 4094"),
+  id: vlanIdSchema,
   name: z.string().trim().min(1, "VLAN name cannot be empty"),
   description: z.string().optional(),
 });
@@ -64,12 +67,114 @@ export const interfaceSchema = z.object({
 });
 
 /**
+ * Runtime validation schema for an IP address pool entry.
+ */
+export const ipPoolSchema = z.object({
+  name: z.string().trim().min(1, "IP pool name cannot be empty"),
+  ranges: z
+    .string()
+    .trim()
+    .min(1, "IP pool ranges cannot be empty")
+    .refine(
+      (value) =>
+        value
+          .split(",")
+          .map((part) => part.trim())
+          .every(
+            (part) =>
+              IPV4_REGEX.test(part) ||
+              IPV4_CIDR_REGEX.test(part) ||
+              IPV4_RANGE_REGEX.test(part)
+          ),
+      "Invalid IP pool range format. Expected IPv4, IPv4/CIDR, or start-end IPv4 range"
+    ),
+});
+
+/**
+ * Runtime validation schema for a PPPoE user profile.
+ */
+export const pppoeProfileSchema = z.object({
+  name: z.string().trim().min(1, "PPPoE profile name cannot be empty"),
+  local_address: z
+    .string()
+    .regex(IPV4_REGEX, "Invalid PPPoE local address format (expected IPv4)")
+    .optional(),
+  remote_pool: z.string().trim().min(1, "Remote pool name cannot be empty"),
+  rate_limit: z.string().trim().min(1, "Rate limit cannot be empty").optional(),
+  dns_servers: z
+    .array(z.string().regex(IPV4_REGEX, "Invalid DNS server IPv4 address"))
+    .optional(),
+});
+
+/**
+ * Runtime validation schema for PPPoE server configuration.
+ */
+export const pppoeSchema = z.object({
+  service_name: z.string().trim().min(1, "PPPoE service name cannot be empty"),
+  interface: z.string().trim().min(1, "PPPoE interface cannot be empty"),
+  default_profile: z
+    .string()
+    .trim()
+    .min(1, "Default PPPoE profile cannot be empty")
+    .optional(),
+  profiles: z
+    .array(pppoeProfileSchema)
+    .min(1, "At least one PPPoE profile is required"),
+});
+
+/**
+ * Runtime validation schema for an OLT DBA profile.
+ */
+export const oltDbaProfileSchema = z.object({
+  id: z.number().int("DBA profile ID must be an integer").min(1),
+  name: z.string().trim().min(1, "DBA profile name cannot be empty"),
+  bandwidth_kbps: z
+    .number()
+    .int("DBA bandwidth must be an integer")
+    .positive("DBA bandwidth (kbps) must be positive"),
+});
+
+/**
+ * Runtime validation schema for an OLT ONT profile.
+ */
+export const oltOntProfileSchema = z.object({
+  profile_id: z.number().int("ONT profile ID must be an integer").min(1),
+  name: z.string().trim().min(1, "ONT profile name cannot be empty"),
+  vlan_id: vlanIdSchema,
+  upload_limit: z
+    .string()
+    .trim()
+    .min(1, "Upload limit cannot be empty")
+    .optional(),
+  download_limit: z
+    .string()
+    .trim()
+    .min(1, "Download limit cannot be empty")
+    .optional(),
+});
+
+/**
+ * Runtime validation schema for OLT GPON/EPON provisioning settings.
+ */
+export const oltSchema = z.object({
+  vendor: z.enum(["vsol", "zte", "generic"]).optional(),
+  pon_ports: z
+    .array(z.number().int("PON port must be an integer").min(1))
+    .optional(),
+  dba_profiles: z.array(oltDbaProfileSchema).optional(),
+  ont_profiles: z.array(oltOntProfileSchema).optional(),
+});
+
+/**
  * Root Zod schema for NetForge network configuration data.
  */
 export const networkDataSchema = z.object({
   device: deviceSchema,
   vlans: z.array(vlanSchema),
   interfaces: interfaceSchema,
+  ip_pools: z.array(ipPoolSchema).optional(),
+  pppoe: pppoeSchema.optional(),
+  olt: oltSchema.optional(),
 });
 
 /**
@@ -105,4 +210,3 @@ export function validateNetworkData(data: unknown): NetworkData {
 
   return result.data;
 }
-

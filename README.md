@@ -17,7 +17,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-20%20passed-6E9F18?logo=vitest&logoColor=white)](tests/)
+[![Vitest](https://img.shields.io/badge/Vitest-24%20passed-6E9F18?logo=vitest&logoColor=white)](tests/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 [Quickstart](#quickstart-3-langkah) •
@@ -214,12 +214,14 @@ end
 
 ## Dukungan Vendor & Perbandingan Fitur
 
-| Vendor / OS | Status | Template | Fitur Konfigurasi |
-| --- | --- | --- | --- |
-| **MikroTik RouterOS v7** | ✅ Didukung | [`templates/mikrotik/vlan_trunk.njk`](templates/mikrotik/vlan_trunk.njk) | Identity, Bridge VLAN Filtering, Tagged/Untagged Ports, VLAN Interfaces, Management IP & Default Route |
-| **Cisco IOS** | ✅ Didukung | [`templates/cisco/vlan_access.njk`](templates/cisco/vlan_access.njk) | Hostname, VLAN Database, Management SVI (`ip_only` & `subnet_mask`), Dot1Q Trunk, Access Portfast |
-| **OpenWrt** | 🚧 Planned *(PR Welcome)* | `templates/openwrt/` *(via `vendor: generic`)* | UCI Network Config & DSA Bridge VLAN |
-| **VyOS** | 🚧 Planned *(PR Welcome)* | `templates/vyos/` *(via `vendor: generic`)* | `set interfaces` & VLAN VIF |
+| Vendor / Skenario | Status | Template | Sample Data | Fitur Konfigurasi |
+| --- | --- | --- | --- | --- |
+| **MikroTik RouterOS v7 (VLAN & Trunk)** | ✅ Didukung | [`templates/mikrotik/vlan_trunk.njk`](templates/mikrotik/vlan_trunk.njk) | [`mikrotik_vlan.yaml`](data/samples/mikrotik_vlan.yaml) | Identity, Bridge VLAN Filtering, Tagged/Untagged Ports, VLAN Interfaces, Management IP & Default Route |
+| **MikroTik ISP / RT-RW Net** | ✅ Didukung | [`templates/mikrotik/isp_pppoe.njk`](templates/mikrotik/isp_pppoe.njk) | [`mikrotik_pppoe.yaml`](data/samples/mikrotik_pppoe.yaml) | IP Pool, PPP Profile tier bandwidth (`rate-limit`), DNS Server, dan PPPoE Server binding |
+| **Cisco IOS** | ✅ Didukung | [`templates/cisco/vlan_access.njk`](templates/cisco/vlan_access.njk) | [`cisco_vlan.yaml`](data/samples/cisco_vlan.yaml) | Hostname, VLAN Database, Management SVI (`ip_only` & `subnet_mask`), Dot1Q Trunk, Access Portfast |
+| **GPON OLT Provisioning** | ✅ Didukung | [`templates/olt/gpon_profile.njk`](templates/olt/gpon_profile.njk) | [`olt_gpon.yaml`](data/samples/olt_gpon.yaml) | DBA profile, ONT line/service profile, dan service-port VLAN mapping (VSOL / ZTE / Generic) |
+| **OpenWrt** | 🚧 Planned *(PR Welcome)* | `templates/openwrt/` *(via `vendor: generic`)* | — | UCI Network Config & DSA Bridge VLAN |
+| **VyOS** | 🚧 Planned *(PR Welcome)* | `templates/vyos/` *(via `vendor: generic`)* | — | `set interfaces` & VLAN VIF |
 
 > **Catatan**: Kontributor dapat langsung menambahkan template `.njk` untuk OpenWrt, VyOS, atau vendor lain menggunakan `vendor: "generic"` tanpa mengubah kode TypeScript inti.
 
@@ -236,8 +238,18 @@ git clone https://github.com/raihanalhamidy/NetForge.git && cd NetForge && npm i
 # 2. Build CLI bundle
 npm run build
 
-# 3. Generate konfigurasi dalam satu baris perintah
+# 3. Generate konfigurasi dalam satu baris perintah (contoh Cisco IOS)
 node dist/index.js build -t templates/cisco/vlan_access.njk -d data/samples/cisco_vlan.yaml -o output/cisco-switch.cfg
+```
+
+### Contoh Skenario Lapangan (ISP PPPoE & OLT GPON)
+
+```bash
+# Render konfigurasi MikroTik PPPoE Server (ISP / RT-RW Net)
+node dist/index.js build -t templates/mikrotik/isp_pppoe.njk -d data/samples/mikrotik_pppoe.yaml -o output/pppoe-server.rsc
+
+# Render konfigurasi OLT GPON Provisioning (VSOL/ZTE/Generic)
+node dist/index.js build -t templates/olt/gpon_profile.njk -d data/samples/olt_gpon.yaml -o output/olt-gpon.cfg
 ```
 
 Ingin membuat data YAML sendiri terlebih dahulu? Jalankan wizard interaktif:
@@ -261,9 +273,9 @@ node dist/index.js init -o data/my-device.yaml
 ### Scripts Pengembangan
 
 ```bash
-npm run dev -- build -t templates/mikrotik/vlan_trunk.njk -d data/samples/mikrotik_vlan.yaml
+npm run dev "--" build -t templates/mikrotik/vlan_trunk.njk -d data/samples/mikrotik_vlan.yaml
 npm run lint   # Cek tipe TypeScript (tsc --noEmit)
-npm test       # Jalankan unit test Vitest (20 test cases)
+npm test       # Jalankan unit test Vitest (24 test cases)
 npm run build  # Build ESM & deklarasi tipe (tsup)
 ```
 
@@ -283,7 +295,7 @@ NetForge/
 │   │   └── ci.yml                       # GitHub Actions (lint, test, build)
 │   └── PULL_REQUEST_TEMPLATE.md         # Checklist kontributor PR
 ├── data/
-│   └── samples/                         # Contoh input YAML (MikroTik & Cisco)
+│   └── samples/                         # Contoh input YAML (MikroTik VLAN/PPPoE, Cisco, OLT)
 ├── src/
 │   ├── commands/                        # Handler subcommand CLI (init, build)
 │   ├── core/                            # Validator Zod, Parser YAML, Renderer Nunjucks
@@ -291,9 +303,12 @@ NetForge/
 │   └── index.ts                         # Entry point CLI Commander
 ├── templates/                           # 📍 Lokasi template vendor (.njk)
 │   ├── mikrotik/
-│   │   └── vlan_trunk.njk
-│   └── cisco/
-│       └── vlan_access.njk
+│   │   ├── vlan_trunk.njk
+│   │   └── isp_pppoe.njk
+│   ├── cisco/
+│   │   └── vlan_access.njk
+│   └── olt/
+│       └── gpon_profile.njk
 ├── tests/                               # Unit test Vitest (validator, parser, renderer)
 ├── CONTRIBUTING.md
 └── LICENSE

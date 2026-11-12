@@ -1,0 +1,55 @@
+device:
+  hostname: "RB-PPPOE-CORE-01"
+  vendor: "mikrotik"
+  mgmt_ip: "10.10.0.1/24"
+  gateway: "10.10.0.254"
+
+vlans:
+  - id: 10
+    name: "Management"
+    description: "Core Router Management"
+  - id: 100
+    name: "PPPoE-Access"
+    description: "OLT Client PPPoE Trunk"
+
+interfaces:
+  trunk:
+    - "sfp-sfpplus1"
+    - "ether1"
+  access:
+    - name: "ether2"
+      vlan_id: 10
+
+ip_pools:
+  - name: "pool-pppoe-clients"
+    ranges: "100.64.10.2-100.64.10.254"
+  - name: "pool-pppoe-vip"
+    ranges: "100.64.20.2-100.64.20.254"
+
+pppoe:
+  service_name: "NETFORGE-ISP"
+  interface: "PPPoE-Access"
+  default_profile: "paket-10mbps"
+  profiles:
+    - name: "paket-5mbps"
+      local_address: "100.64.10.1"
+      remote_pool: "pool-pppoe-clients"
+      rate_limit: "5M/5M"
+      dns_servers:
+        - "1.1.1.1"
+        - "8.8.8.8"
+    - name: "paket-10mbps"
+      local_address: "100.64.10.1"
+      remote_pool: "pool-pppoe-clients"
+      rate_limit: "10M/10M"
+      dns_servers:
+        - "1.1.1.1"
+        - "8.8.8.8"
+    - name: "paket-20mbps"
+      local_address: "100.64.20.1"
+      remote_pool: "pool-pppoe-vip"
+      rate_limit: "20M/20M"
+      dns_servers:
+        - "1.1.1.1"
+        - "8.8.8.8"
+

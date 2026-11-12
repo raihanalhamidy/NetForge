@@ -1,0 +1,43 @@
+device:
+  hostname: "OLT-GPON-01"
+  vendor: "generic"
+  mgmt_ip: "172.16.10.2/24"
+  gateway: "172.16.10.1"
+
+vlans:
+  - id: 100
+    name: "PPPoE-Internet"
+    description: "Client Broadband Internet"
+  - id: 200
+    name: "Hotspot-Public"
+    description: "Public Wi-Fi Hotspot"
+
+interfaces:
+  trunk:
+    - "ge0/1"
+    - "xge0/1"
+
+olt:
+  vendor: "vsol"
+  pon_ports:
+    - 1
+    - 2
+  dba_profiles:
+    - id: 10
+      name: "DBA-100M"
+      bandwidth_kbps: 102400
+    - id: 20
+      name: "DBA-1G"
+      bandwidth_kbps: 1024000
+  ont_profiles:
+    - profile_id: 10
+      name: "ONT-INTERNET"
+      vlan_id: 100
+      upload_limit: "20M"
+      download_limit: "20M"
+    - profile_id: 20
+      name: "ONT-HOTSPOT"
+      vlan_id: 200
+      upload_limit: "10M"
+      download_limit: "10M"
+

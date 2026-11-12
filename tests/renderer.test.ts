@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parseConfigFile } from "../src/core/parser.js";
 import { renderConfig, TemplateRenderError } from "../src/core/renderer.js";
 import type { NetworkData } from "../src/types/config.js";
 
@@ -102,6 +103,43 @@ describe("renderConfig", () => {
     await expect(
       renderConfig(missingTemplate, mikrotikSample)
     ).rejects.toThrow(`File template tidak ditemukan di: ${missingTemplate}`);
+  });
+
+  it("renders MikroTik ISP PPPoE template with ip pool, ppp profile, and pppoe-server", async () => {
+    const data = await parseConfigFile("data/samples/mikrotik_pppoe.yaml");
+    const output = await renderConfig("templates/mikrotik/isp_pppoe.njk", data);
+
+    expect(output).toContain('/system identity set name="RB-PPPOE-CORE-01"');
+    expect(output).toContain(
+      '/ip pool add name="pool-pppoe-clients" ranges=100.64.10.2-100.64.10.254'
+    );
+    expect(output).toContain(
+      '/ppp profile add name="paket-10mbps" local-address=100.64.10.1 remote-address="pool-pppoe-clients" dns-server=1.1.1.1,8.8.8.8 rate-limit="10M/10M"'
+    );
+    expect(output).toContain(
+      '/interface pppoe-server server add service-name="NETFORGE-ISP" interface=PPPoE-Access default-profile="paket-10mbps"'
+    );
+    expect(output).not.toContain("&quot;");
+  });
+
+  it("renders OLT GPON provisioning template with DBA profile, ONT profile, and service-port flow", async () => {
+    const data = await parseConfigFile("data/samples/olt_gpon.yaml");
+    const output = await renderConfig("templates/olt/gpon_profile.njk", data);
+
+    expect(output).toContain("hostname OLT-GPON-01");
+    expect(output).toContain("ip address 172.16.10.2 255.255.255.0");
+    expect(output).toContain(
+      'dba-profile add profile-id 10 profile-name "DBA-100M" type4 max 102400'
+    );
+    expect(output).toContain(
+      'ont-lineprofile gpon profile-id 10 profile-name "ONT-INTERNET"'
+    );
+    expect(output).toContain(
+      'ont-srvprofile gpon profile-id 20 profile-name "ONT-HOTSPOT"'
+    );
+    expect(output).toContain(
+      "service-port vlan 100 gpon 0/1 ont all gemport 1 multi-service user-vlan 100 rx-cttr 20M tx-cttr 20M"
+    );
   });
 });
 
