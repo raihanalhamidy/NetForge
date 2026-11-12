@@ -130,7 +130,7 @@ npm run build  # Build bundle ESM & deklarasi tipe (tsup)
 
 ## Contributing
 
-Kontribusi sangat terbuka—terutama untuk penambahan template vendor jaringan baru! Silakan baca [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan struktur template, daftar variabel Nunjucks yang tersedia, dan aturan Pull Request.
+Kontribusi sangat terbuka terutama untuk penambahan template vendor jaringan baru! Silakan baca [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan struktur template, daftar variabel Nunjucks yang tersedia, dan aturan Pull Request.
 
 ---
 
