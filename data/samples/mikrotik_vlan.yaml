@@ -1,0 +1,27 @@
+device:
+  hostname: "RB-DIST-01"
+  vendor: "mikrotik"
+  mgmt_ip: "192.168.88.2/24"
+  gateway: "192.168.88.1"
+
+vlans:
+  - id: 10
+    name: "Management"
+    description: "Management Network"
+  - id: 20
+    name: "Hotspot"
+    description: "Hotspot Client Network"
+  - id: 30
+    name: "Office"
+    description: "Internal Office Network"
+
+interfaces:
+  trunk:
+    - "ether1"
+    - "ether2"
+  access:
+    - name: "ether3"
+      vlan_id: 20
+    - name: "ether4"
+      vlan_id: 30
+

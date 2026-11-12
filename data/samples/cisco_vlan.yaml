@@ -1,0 +1,21 @@
+device:
+  hostname: "SW-ACCESS-01"
+  vendor: "cisco"
+  mgmt_ip: "10.10.10.2/24"
+  gateway: "10.10.10.1"
+
+vlans:
+  - id: 100
+    name: "Voice"
+    description: "VoIP Telephony Network"
+  - id: 200
+    name: "Data"
+    description: "Corporate Data Network"
+
+interfaces:
+  trunk:
+    - "GigabitEthernet0/1"
+  access:
+    - name: "GigabitEthernet0/2"
+      vlan_id: 200
+
