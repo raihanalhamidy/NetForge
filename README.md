@@ -11,7 +11,7 @@
 
 ## Mengapa NetForge?
 
-**Masalah**: Mengonfigurasi banyak switch dan router dari berbagai vendor secara manual lewat CLI sangat rentan terhadap *human error*—mulai dari salah ketik VLAN ID, lupa menambahkan interface ke trunk, hingga inkonsistensi subnet mask antar perangkat.
+**Masalah**: Mengonfigurasi banyak switch dan router dari berbagai vendor secara manual lewat CLI sangat rentan terhadap *human error* mulai dari salah ketik VLAN ID, lupa menambahkan interface ke trunk, hingga inkonsistensi subnet mask antar perangkat.
 
 **Solusi**: **NetForge** memisahkan *data topologi* (YAML) dari *sintaks CLI vendor* (template Nunjucks). Data YAML terlebih dahulu divalidasi secara ketat saat runtime menggunakan **Zod** (memastikan rentang VLAN `1–4094`, format IP/CIDR, dan kelengkapan field) sebelum di-render menjadi script konfigurasi siap pakai.
 
