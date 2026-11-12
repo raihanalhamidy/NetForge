@@ -1,0 +1,44 @@
+name: Bug Report
+description: Laporkan bug atau perilaku tidak terduga pada NetForge CLI
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Terima kasih telah melaporkan bug di **NetForge**. Mohon isi detail di bawah agar kami dapat mereproduksi dan memperbaikinya dengan cepat.
+  - type: textarea
+    id: description
+    attributes:
+      label: Deskripsi Bug
+      description: Jelaskan secara singkat apa yang terjadi dan apa yang seharusnya terjadi.
+      placeholder: Contoh - Gagal merender template ketika field gateway dikosongkan.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Langkah Reproduksi
+      description: Tuliskan langkah-langkah untuk mereproduksi masalah ini.
+      placeholder: |
+        1. Jalankan perintah `netforge build -t ... -d ...`
+        2. Lihat error yang muncul
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Sistem Operasi & Versi Node.js
+      description: Sebutkan OS dan versi Node.js yang digunakan.
+      placeholder: "Windows 11 / Ubuntu 22.04, Node.js v20.x"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output Terminal / Log Error
+      description: Tempelkan output terminal atau pesan error yang muncul.
+      render: shell
+    validations:
+      required: false
+

@@ -1,0 +1,41 @@
+name: New Vendor Template Request
+description: Ajukan atau kontribusikan template konfigurasi perangkat jaringan baru
+title: "[Template]: "
+labels: ["enhancement", "template"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ingin menambahkan dukungan vendor atau skenario konfigurasi baru ke **NetForge**? Lengkapi detail di bawah ini.
+  - type: input
+    id: vendor
+    attributes:
+      label: Nama Vendor / OS Perangkat
+      description: Contoh - Juniper Junos, Arista EOS, Huawei VRP, MikroTik RouterOS, Cisco IOS.
+      placeholder: "Arista EOS"
+    validations:
+      required: true
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case Konfigurasi
+      description: Jelaskan skenario jaringan yang ingin diotomasi oleh template ini.
+      placeholder: "Konfigurasi VLAN trunking dan SVI management pada switch L2/L3."
+    validations:
+      required: true
+  - type: textarea
+    id: cli_syntax
+    attributes:
+      label: Contoh Sintaks CLI Perangkat
+      description: Sertakan contoh output CLI yang valid untuk perangkat target tersebut.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: extra_notes
+    attributes:
+      label: Catatan Tambahan (Opsional)
+      description: Informasi versi OS perangkat atau kebutuhan variabel tambahan.
+    validations:
+      required: false
+
